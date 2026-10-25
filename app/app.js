@@ -4,6 +4,8 @@
 import { demoMind } from './demo.js'
 
 const M = window.mind || demoMind()
+// room at the left of the top row for the Mac's window buttons (Alex, 26 Oct: they sat on the wordmark)
+if (window.mind) document.documentElement.classList.add('mac')
 
 /* ---------- small helpers (as RoarTwin's) ---------- */
 const h = (tag, attrs = {}, ...kids) => {
