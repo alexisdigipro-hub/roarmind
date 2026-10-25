@@ -1,7 +1,7 @@
 {
   "name": "roarmind",
   "productName": "RoarMind",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "RoarMind: ask your Mac in everyday words; files, emails, screenshots and notes, found by what they say, all on this Mac. The Mad Lions Lab.",
   "author": "THEMADLIONS",
   "private": true,

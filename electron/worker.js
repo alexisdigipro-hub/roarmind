@@ -15,14 +15,15 @@ const helper = new Helper(helperPath)
 const port = process.parentPort
 const send = (m) => port.postMessage(m)
 
-let running = null, stopNow = false, progress = null, pulling = null
+let running = null, stopNow = false, progress = null, pulling = null, forceNow = false
 const EVERY = 30 * 60e3
 
-async function indexNow() {
+async function indexNow(force = false) {
+  if (force) forceNow = true
   if (running) return running
   stopNow = false
   running = (async () => {
-    try { return await indexer.runIndex(db, helper, (p) => { progress = p; send({ event: 'progress', data: p }) }, () => stopNow) } catch (e) { if (!(e instanceof indexer.Stopped)) setMeta(db, 'lastError', String(e?.message || e)) } finally { running = null; progress = null; send({ event: 'progress', data: null }) }
+    try { return await indexer.runIndex(db, helper, (p) => { progress = p; send({ event: 'progress', data: p }) }, () => stopNow, { force: () => forceNow }) } catch (e) { if (!(e instanceof indexer.Stopped)) setMeta(db, 'lastError', String(e?.message || e)) } finally { running = null; progress = null; forceNow = false; send({ event: 'progress', data: null }) }
   })()
   return running
 }
@@ -40,7 +41,7 @@ const CMD = {
     setMeta(db, 'settings', s)
     return s
   },
-  index() { indexNow(); return true },
+  index(args) { indexNow(!!args?.force); return true },
   stop() { stopNow = true; return true },
   async search({ q, ai }) { return search(db, indexer.settingsOf(db).ollama, String(q || ''), { ai: ai !== false }) },
   async answer({ q, results }) { return answer(indexer.settingsOf(db).ollama, String(q || ''), results || []) },
@@ -72,6 +73,6 @@ port.on('message', async (e) => {
   try { send({ id, ok: true, result: await CMD[cmd](args) }) } catch (err) { send({ id, ok: false, error: String(err?.message || err) }) }
 })
 
-// a first reading a little after the app opens, then every half hour
-setTimeout(indexNow, 20e3)
+// a first reading a few seconds after the app opens, then every half hour
+setTimeout(indexNow, 5e3)
 setInterval(indexNow, EVERY)

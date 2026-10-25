@@ -75,7 +75,7 @@ function menu() {
 const known = new Map()
 ipcMain.handle('mind:status', () => ask('status'))
 ipcMain.handle('mind:settings', (_e, s) => ask('settings', s))
-ipcMain.handle('mind:index', () => ask('index'))
+ipcMain.handle('mind:index', (_e, a) => ask('index', a))
 ipcMain.handle('mind:stop', () => ask('stop'))
 ipcMain.handle('mind:pull', () => ask('pull'))
 ipcMain.handle('mind:erase', async () => {
