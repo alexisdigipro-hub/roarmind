@@ -2,6 +2,9 @@
 // the searching never slow the window down. The app asks with { id, cmd, args } and gets { id, ok, result | error };
 // the reading's progress comes as { event: 'progress' }.
 const os = require('os')
+const path = require('path')
+const fs = require('fs')
+const { execFile } = require('child_process')
 const { open, getMeta, setMeta } = require('./engine/db')
 const { Helper } = require('./engine/extract')
 const indexer = require('./engine/indexer')
@@ -28,10 +31,27 @@ async function indexNow(force = false) {
   if (force) forceNow = true
   if (running) return running
   stopNow = false
+  await aiStatus(indexer.settingsOf(db).ollama).catch(() => {})
   running = (async () => {
     try { return await indexer.runIndex(db, helper, (p) => { progress = p; send({ event: 'progress', data: p }) }, () => stopNow, { force: () => forceNow }) } catch (e) { if (!(e instanceof indexer.Stopped)) setMeta(db, 'lastError', String(e?.message || e)) } finally { running = null; progress = null; forceNow = false; send({ event: 'progress', data: null }) }
   })()
   return running
+}
+
+/* Ollama installed but closed: RoarMind opens it in the background (Alex, 26 Oct: "does Ollama have to be open?"),
+   at most once a minute, so the AI is there without a thought */
+let wokeAt = 0
+async function aiStatus(cfg) {
+  const st = await ollama.status(cfg)
+  if (!st.running && process.platform === 'darwin' && Date.now() - wokeAt > 60e3) {
+    const app = ['/Applications/Ollama.app', path.join(os.homedir(), 'Applications', 'Ollama.app')].find((p) => fs.existsSync(p))
+    if (app) {
+      wokeAt = Date.now()
+      execFile('/usr/bin/open', ['-g', '-a', app])
+      for (let i = 0; i < 10; i++) { await new Promise((r) => setTimeout(r, 1000)); const again = await ollama.status(cfg); if (again.running) return again }
+    }
+  }
+  return st
 }
 
 function stats() {
@@ -41,7 +61,7 @@ function stats() {
 }
 
 const CMD = {
-  async status() { const s = indexer.settingsOf(db); return { settings: s, ai: await ollama.status(s.ollama), stats: stats(), pulling } },
+  async status() { const s = indexer.settingsOf(db); return { settings: s, ai: await aiStatus(s.ollama), stats: stats(), pulling } },
   settings(next) {
     const s = { ...indexer.settingsOf(db), ...next }
     setMeta(db, 'settings', s)
