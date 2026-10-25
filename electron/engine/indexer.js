@@ -16,7 +16,8 @@ class Stopped extends Error { constructor() { super('Stopped') } }
 const HOME = os.homedir()
 const DEFAULT_SETTINGS = {
   folders: ['Documents', 'Desktop', 'Downloads'].map((d) => path.join(HOME, d)),
-  never: [], mail: true, notes: true, images: true, onlyOnPower: true, lang: 'en',
+  // reads on battery too (Alex, 26 Oct); waiting for the charger is a choice in Settings
+  never: [], mail: true, notes: true, images: true, onlyOnPower: false, lang: 'en',
   ollama: { ...ollama.DEFAULTS },
 }
 const settingsOf = (db) => { const s = { ...DEFAULT_SETTINGS, ...getMeta(db, 'settings', {}) }; s.ollama = { ...ollama.DEFAULTS, ...(s.ollama || {}) }; return s }

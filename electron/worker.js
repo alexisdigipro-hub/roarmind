@@ -13,6 +13,12 @@ const [dbPath, helperPath] = process.argv.slice(2)
 const db = open(dbPath)
 const helper = new Helper(helperPath)
 const port = process.parentPort
+// once: settings saved while the charger was the default now read on battery too (Alex, 26 Oct)
+if (!getMeta(db, 'batteryDefault')) {
+  const saved = getMeta(db, 'settings', null)
+  if (saved) setMeta(db, 'settings', { ...saved, onlyOnPower: false })
+  setMeta(db, 'batteryDefault', true)
+}
 const send = (m) => port.postMessage(m)
 
 let running = null, stopNow = false, progress = null, pulling = null, forceNow = false
