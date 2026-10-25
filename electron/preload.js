@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('mind', {
   version: () => ipcRenderer.invoke('mind:version'),
   status: () => ipcRenderer.invoke('mind:status'),
   settings: (s) => ipcRenderer.invoke('mind:settings', s),
-  index: () => ipcRenderer.invoke('mind:index'),
+  index: (a) => ipcRenderer.invoke('mind:index', a),
   stop: () => ipcRenderer.invoke('mind:stop'),
   pull: () => ipcRenderer.invoke('mind:pull'),
   erase: () => ipcRenderer.invoke('mind:erase'),

@@ -127,7 +127,7 @@ async function notesList() {
 }
 
 /* ---------- a run ---------- */
-async function runIndex(db, helper, tick = () => {}, stop = () => false) {
+async function runIndex(db, helper, tick = () => {}, stop = () => false, { force = () => false } = {}) {
   const s = settingsOf(db)
   const cfg = s.ollama
   const st = await ollama.status(cfg)
@@ -140,7 +140,8 @@ async function runIndex(db, helper, tick = () => {}, stop = () => false) {
     if (old && old.mtime === item.mtime && old.size === item.size) { db.prepare('UPDATE items SET seen = ? WHERE id = ?').run(seen, old.id); return true }
     return false
   }
-  const waitPower = async () => { if (s.onlyOnPower) while (!(await onPower())) { tick({ stage: 'battery' }); for (let i = 0; i < 30 && !stop(); i++) await new Promise((r) => setTimeout(r, 1000)); if (stop()) throw new Stopped() } }
+  // "Read now, on battery" (force) lets this reading go on without the charger
+  const waitPower = async () => { if (s.onlyOnPower) while (!force() && !(await onPower())) { tick({ stage: 'battery' }); for (let i = 0; i < 30 && !stop() && !force(); i++) await new Promise((r) => setTimeout(r, 1000)); if (stop()) throw new Stopped() } }
 
   // files
   await waitPower()

@@ -50,6 +50,12 @@ const opt = (title, sub, control) => h('div', { class: 'opt' }, h('span', {}, h(
 
 /* ---------- words: English, or Greek when chosen in Settings ---------- */
 const EL = {
+  'RoarMind has not read your Mac yet.': 'Το RoarMind δεν έχει διαβάσει ακόμα το Mac σου.',
+  'Your Mac is on battery, and RoarMind reads on the charger. Put it on the charger, or read now.': 'Το Mac είναι στη μπαταρία, και το RoarMind διαβάζει στον φορτιστή. Βάλ\' το στον φορτιστή, ή διάβασε τώρα.',
+  'Read now, on battery': 'Διάβασε τώρα, με μπαταρία',
+  'Reading your Mac for the first time: {n} so far. Search finds more as it goes.': 'Διαβάζει το Mac σου για πρώτη φορά: {n} ως τώρα. Η αναζήτηση βρίσκει περισσότερα όσο προχωράει.',
+  'It starts by itself in a moment, or now:': 'Ξεκινάει μόνο του σε λίγο, ή τώρα:',
+  'Nothing is read yet, so nothing can be found.': 'Δεν έχει διαβαστεί τίποτα ακόμα, άρα δεν βρίσκεται τίποτα.',
   'Ask your <b>Mac</b>.': 'Ρώτα το <b>Mac</b> σου.',
   'Files, emails, screenshots and notes, found by what they say. Everything stays on this Mac.': 'Αρχεία, email, screenshots και σημειώσεις, βρίσκονται από αυτό που λένε. Όλα μένουν σε αυτό το Mac.',
   'Ask anything… e.g. the PDF with the offers Giorgos sent me in March 2024': 'Ρώτα ό,τι θες… π.χ. το PDF με τις προσφορές που μου έστειλε ο Γιώργος τον Μάρτιο του 2024',
@@ -99,7 +105,7 @@ async function refresh(quiet = false) {
   try { const s = await M.status(); S.settings = s.settings; S.ai = s.ai; S.stats = s.stats; S.pulling = s.pulling || S.pulling } catch { /* the engine is starting */ }
   if (quiet) { drawTop(); drawSetup() } else draw()
 }
-M.onProgress?.((p) => { S.progress = p; drawTop() })
+M.onProgress?.((p) => { const was = !!S.progress; S.progress = p; if (!indexedCount() && was !== !!p && S.view !== 'settings') draw(); else drawTop() })
 M.onPull?.((p) => { S.pulling = p?.done || p?.error ? null : p; if (p?.error) toast(p.error); if (p?.done) refresh(); else drawSetup() })
 M.update?.state?.().then((u) => { S.update = u; drawTop() })
 M.update?.on?.((u) => { S.update = u; drawTop() })
@@ -155,10 +161,22 @@ function viewHome() {
   return h('main', {}, h('div', { class: 'home' }, h('div', { class: 'card' },
     h('div', { class: 'hero' }, h('h1', { html: t('Ask your <b>Mac</b>.') }), h('p', {}, t('Files, emails, screenshots and notes, found by what they say. Everything stays on this Mac.'))),
     setupEl(),
+    firstReadEl(),
     askBox(),
     h('div', { class: 'examples' }, ...ex.map((x) => h('span', { class: 'chip', onclick: () => go(t(x)) }, t(x)))))))
 }
 
+// before the first reading: why nothing is found yet, and a way to start now (Alex, 26 Oct: "it doesn't work")
+const indexedCount = () => Object.values(S.stats?.by || {}).reduce((a, n) => a + n, 0)
+function firstReadEl() {
+  if (!S.stats || indexedCount() > 0) return null
+  const p = S.progress
+  if (p && p.stage !== 'battery') return h('section', { class: 'panel setup' }, h('p', {}, t('Reading your Mac for the first time: {n} so far. Search finds more as it goes.', { n: num(p.done || 0) })))
+  return h('section', { class: 'panel setup' },
+    h('h3', {}, t('RoarMind has not read your Mac yet.')),
+    h('p', {}, p?.stage === 'battery' ? t('Your Mac is on battery, and RoarMind reads on the charger. Put it on the charger, or read now.') : t('It starts by itself in a moment, or now:')),
+    h('div', { class: 'row' }, h('button', { class: 'btn main', onclick: () => { M.index({ force: true }); S.progress = { stage: 'files', done: 0 }; draw() } }, p?.stage === 'battery' ? t('Read now, on battery') : t('Read now'))))
+}
 // when the AI is not ready: what to do, one step
 let setupBox = null
 function setupEl() {
@@ -229,7 +247,7 @@ function viewResults() {
     S.busy ? h('div', { class: 'empty dots' }, t('Searching')) : null,
     r ? h('div', { class: 'sum' }, ...planChips(r.plan), h('span', { class: 'chip' }, t('{n} found', { n: num(r.results.length) }))) : null,
     S.answer ? h('section', { class: 'panel answer' }, h('b', { class: 'lbl' }, t('Answer')), S.answer === '…' ? h('p', { class: 'dots' }, t('Thinking')) : h('p', {}, S.answer)) : null,
-    r && !r.results.length && !S.busy ? h('div', { class: 'empty' }, t('Nothing found. Try other words, or a wider period.')) : null,
+    r && !r.results.length && !S.busy ? (indexedCount() ? h('div', { class: 'empty' }, t('Nothing found. Try other words, or a wider period.')) : firstReadEl() || h('div', { class: 'empty' }, t('Nothing is read yet, so nothing can be found.'))) : null,
     ...(r ? r.results.map((x) => hitEl(x, r.plan?.terms || S.q)) : [])))
 }
 
