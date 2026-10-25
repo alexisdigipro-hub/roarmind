@@ -9,7 +9,7 @@ stays on the Mac. An experiment of The Mad Lions Lab.
   list keeps folders out), the text of PDFs, Word, RTF, OpenDocument and plain text, the words in screenshots and
   pictures (the Mac's own text recognition), every message in Apple Mail with its sender, date and the text of its
   attached PDFs and documents, and every note in Notes. Only what is new or changed is read again, every half hour;
-  what is gone leaves the index. It waits while the Mac runs on battery (a setting) and works at a low priority.
+  what is gone leaves the index. It reads on battery too (waiting for the charger is a setting) and works at a low priority.
 - **Understands the question:** the AI on the Mac turns it into filters (what kind, from whom in any spelling, Γιώργος
   = Giorgos = George, between which dates) and words for the content in Greek and English.
 - **Finds by meaning and by words:** every piece of text has numbers from the AI (bge-m3, at home in Greek and
