@@ -1,0 +1,59 @@
+{
+  "name": "roarmind",
+  "productName": "RoarMind",
+  "version": "0.1.0",
+  "description": "RoarMind: ask your Mac in everyday words; files, emails, screenshots and notes, found by what they say, all on this Mac. The Mad Lions Lab.",
+  "author": "THEMADLIONS",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/engine.test.js",
+    "helper": "mkdir -p helper/bin && swiftc -O -target arm64-apple-macos12 -o helper/bin/helper-arm64 helper/main.swift && swiftc -O -target x86_64-apple-macos12 -o helper/bin/helper-x64 helper/main.swift && lipo -create -output helper/bin/roarmind-helper helper/bin/helper-arm64 helper/bin/helper-x64 && codesign --force --sign - helper/bin/roarmind-helper",
+    "postinstall": "electron-builder install-app-deps",
+    "dist:mac": "npm run helper && electron-builder --mac dmg --arm64 --publish never && electron-builder --mac dmg --x64 --publish never"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "electron": "^44.9.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.themadlions.roarmind",
+    "productName": "RoarMind",
+    "asar": false,
+    "directories": {
+      "output": "out",
+      "buildResources": "electron/build"
+    },
+    "files": [
+      "electron/**/*",
+      "!electron/build/**",
+      "app/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "helper/bin/roarmind-helper", "to": "roarmind-helper" }
+    ],
+    "afterPack": "./electron/adhoc-sign.js",
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.productivity",
+      "identity": null,
+      "minimumSystemVersion": "12.0",
+      "artifactName": "RoarMind-${version}-beta-Mac-${arch}.${ext}",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "RoarMind reads your notes in the Notes app to find them for you. Nothing leaves this Mac.",
+        "NSDesktopFolderUsageDescription": "RoarMind reads the folders you choose to find your files for you. Nothing leaves this Mac.",
+        "NSDocumentsFolderUsageDescription": "RoarMind reads the folders you choose to find your files for you. Nothing leaves this Mac.",
+        "NSDownloadsFolderUsageDescription": "RoarMind reads the folders you choose to find your files for you. Nothing leaves this Mac."
+      }
+    },
+    "dmg": {
+      "artifactName": "RoarMind-${version}-beta-Mac-${arch}.${ext}",
+      "title": "RoarMind"
+    }
+  }
+}

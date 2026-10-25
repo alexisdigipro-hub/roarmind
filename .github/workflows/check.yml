@@ -1,0 +1,34 @@
+name: Check RoarMind
+
+# Every push and pull request: the scripts parse and the engine finds the right things in real files and messages
+# (Linux, with a stand-in for Ollama); on a Mac, the helper builds and reads a PDF and a picture with words.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax of every script
+        run: |
+          for f in electron/*.js electron/engine/*.js test/*.js; do node --check "$f"; done
+          for f in app/*.js; do node --input-type=module --check < "$f"; done
+          node -e "require('./package.json')"
+      - name: The engine on real files
+        run: node test/engine.test.js
+  helper:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the helper (Apple Silicon and Intel)
+        run: npm run helper
+      - name: It reads a PDF and the words in a picture
+        run: helper/bin/roarmind-helper selftest
