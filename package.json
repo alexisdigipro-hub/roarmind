@@ -1,7 +1,7 @@
 {
   "name": "roarmind",
   "productName": "RoarMind",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "RoarMind: ask your Mac in everyday words; files, emails, screenshots and notes, found by what they say, all on this Mac. The Mad Lions Lab.",
   "author": "THEMADLIONS",
   "private": true,
@@ -35,11 +35,16 @@
       "package.json"
     ],
     "extraResources": [
-      { "from": "helper/bin/roarmind-helper", "to": "roarmind-helper" }
+      {
+        "from": "helper/bin/roarmind-helper",
+        "to": "roarmind-helper"
+      }
     ],
     "afterPack": "./electron/adhoc-sign.js",
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "category": "public.app-category.productivity",
       "identity": null,
       "minimumSystemVersion": "12.0",
