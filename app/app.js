@@ -33,6 +33,7 @@ const I = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.8 5.2 5.2 1.8-5.2 1.8L12 17.5l-1.8-5.2-5.2-1.8 5.2-1.8z"/><path d="M18.5 15.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>',
   folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>',
 }
 const ico = (name) => h('span', { html: I[name], 'aria-hidden': 'true' })
@@ -93,12 +94,28 @@ const EL = {
   'It reads again by itself every half hour; only what is new or changed.': 'Ξαναδιαβάζει μόνο του κάθε μισή ώρα· μόνο ό,τι είναι νέο ή αλλαγμένο.',
   'Erased. RoarMind reads everything again.': 'Σβήστηκε. Το RoarMind τα ξαναδιαβάζει όλα.',
   'Restart to update': 'Επανεκκίνηση για ενημέρωση', 'files': 'αρχεία', 'emails': 'email', 'pictures': 'εικόνες', 'notes': 'σημειώσεις', 'documents': 'έγγραφα', 'PDFs': 'PDF',
+  "Ask Claude": "Ρώτα τον Claude",
+  "Sends your question and pieces of the {n} items found to Claude, to think them through. Nothing else leaves the Mac.": "Στέλνει την ερώτησή σου και κομμάτια από τα {n} που βρέθηκαν στον Claude, για να τα σκεφτεί. Τίποτα άλλο δεν φεύγει από το Mac.",
+  "Claude is thinking": "Ο Claude σκέφτεται",
+  "Claude could not answer: {e}": "Ο Claude δεν μπόρεσε να απαντήσει: {e}",
+  "Sent: your question and pieces of {n} items ({c} characters).": "Στάλθηκαν: η ερώτησή σου και κομμάτια από {n} ({c} χαρακτήρες).",
+  "Ask again": "Ρώτα ξανά",
+  "Ask Claude works in the Mac app.": "Το Ρώτα τον Claude δουλεύει στην εφαρμογή του Mac.",
+  "Sign in with your RoarMe account to ask Claude.": "Συνδέσου με τον λογαριασμό σου RoarMe για να ρωτάς τον Claude.",
+  "Searching always stays on this Mac. Only when you press Ask Claude, your question and pieces of the items found go to Claude (Anthropic), through The Mad Lions' server; never whole files, nothing else.": "Το ψάξιμο μένει πάντα σε αυτό το Mac. Μόνο όταν πατάς Ρώτα τον Claude, η ερώτησή σου και κομμάτια από ό,τι βρέθηκε πάνε στον Claude (Anthropic), μέσω του server των The Mad Lions· ποτέ ολόκληρα αρχεία, τίποτα άλλο.",
+  "Signed in as {e}.": "Συνδεδεμένος ως {e}.",
+  "Sign out": "Αποσύνδεση",
+  "Password": "Κωδικός",
+  "Sign in": "Σύνδεση",
+  "Signed in. Ask Claude is ready.": "Συνδέθηκες. Το Ρώτα τον Claude είναι έτοιμο.",
+  "Could not sign in: {e}": "Δεν έγινε σύνδεση: {e}",
+  "Sign in with your RoarMe account (the same as RoarWriter and RoarList) to ask Claude.": "Συνδέσου με τον λογαριασμό σου RoarMe (τον ίδιο με το RoarWriter και το RoarList) για να ρωτάς τον Claude."
 }
 const t = (s, vars) => { let o = (S.settings?.lang === 'el' && EL[s]) || s; if (vars) o = o.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? ''); return o }
 const dateOf = (ms) => (ms ? new Date(ms).toLocaleDateString(S.settings?.lang === 'el' ? 'el-GR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '')
 
 /* ---------- state ---------- */
-const S = { view: 'home', q: store.get('q', ''), res: null, answer: null, busy: false, settings: null, ai: null, stats: null, pulling: null, progress: null, update: null }
+const S = { view: 'home', q: store.get('q', ''), res: null, answer: null, claude: { signedIn: false, email: '' }, claudeAns: null, busy: false, settings: null, ai: null, stats: null, pulling: null, progress: null, update: null }
 const app = document.getElementById('app')
 // the state from the engine; quiet = only the top row and the AI card change (never the box being typed in)
 async function refresh(quiet = false) {
@@ -145,13 +162,53 @@ function askBox() {
   return h('div', { class: 'search-wrap' }, h('span', { html: I.search }), input)
 }
 async function go(q) {
-  S.q = q; store.set('q', q); S.view = 'results'; S.res = null; S.answer = null; S.busy = true; draw()
+  S.q = q; store.set('q', q); S.view = 'results'; S.res = null; S.answer = null; S.claudeAns = null; S.busy = true; draw()
   try {
     S.res = await M.search({ q, ai: true })
   } catch (e) { S.res = { plan: {}, results: [] }; toast(String(e?.message || e)) }
   S.busy = false
   // an answer only when the AI that answers is there and something was found
   if (S.res.plan?.ai && S.res.results.length) { S.answer = '…'; draw(); M.answer({ q, results: S.res.results.slice(0, 6) }).then((a) => { if (S.q === q) { S.answer = a; draw() } }).catch(() => { S.answer = null; draw() }) } else draw()
+}
+
+/* ---------- Ask Claude (Alex, 30 Oct: "RoarMind like you", option 2) ----------
+   Only when pressed: the question and the pieces of the items found go to Claude (electron/claude.js); the search
+   itself never leaves the Mac. The answer names the items as [2]; a tap on [2] opens it. */
+const CLAUDE_ITEMS = 8
+M.claude?.state().then((c) => { S.claude = c; if (S.view === 'settings') draw() })
+async function askClaude() {
+  const q = S.q, found = (S.res?.results || []).slice(0, CLAUDE_ITEMS)
+  if (!M.claude) return toast(t('Ask Claude works in the Mac app.'))
+  if (!S.claude.signedIn) { S.view = 'settings'; S.claudeFocus = true; draw(); return toast(t('Sign in with your RoarMe account to ask Claude.')) }
+  S.claudeAns = { busy: true, found }; draw()
+  const r = await M.claude.ask(q, found.map((x) => x.id))
+  if (S.q !== q) return
+  if (r.ok) S.claudeAns = { text: r.answer, sent: r.sent, found: r.ids ? r.ids.map((id) => found.find((x) => String(x.id) === String(id))).filter(Boolean) : found }
+  else if (r.signin) { S.claude = { signedIn: false, email: '' }; S.claudeAns = null; S.view = 'settings'; S.claudeFocus = true; toast(t('Sign in with your RoarMe account to ask Claude.')) }
+  else S.claudeAns = { error: r.error, found }
+  draw()
+}
+// Claude's text, with [2] made into a link to the second item found
+function claudeText(text, found) {
+  return h('div', { class: 'claude-text' }, ...String(text).split('\n').map((line) => h('p', {}, ...line.split(/(\[\d+\])/).map((part) => {
+    const m = /^\[(\d+)\]$/.exec(part)
+    const it = m && found[+m[1] - 1]
+    return it ? h('button', { class: 'cite', title: it.title, onclick: () => M.open(it.id) }, `[${m[1]}]`) : part
+  }))))
+}
+function claudeEl() {
+  const r = S.res
+  if (!r || !r.results.length) return null
+  const a = S.claudeAns
+  const n = Math.min(CLAUDE_ITEMS, r.results.length)
+  if (!a) return h('section', { class: 'panel claude-ask' },
+    h('button', { class: 'btn main', onclick: askClaude }, ico('spark'), t('Ask Claude')),
+    h('small', { class: 'muted' }, t('Sends your question and pieces of the {n} items found to Claude, to think them through. Nothing else leaves the Mac.', { n })))
+  return h('section', { class: 'panel answer claude' },
+    h('b', { class: 'lbl' }, ico('spark'), 'Claude'),
+    a.busy ? h('p', { class: 'dots' }, t('Claude is thinking')) : a.error ? h('p', { class: 'warn-line' }, t('Claude could not answer: {e}', { e: a.error })) : claudeText(a.text, a.found),
+    a.sent ? h('small', { class: 'muted' }, t('Sent: your question and pieces of {n} items ({c} characters).', { n: a.sent.items, c: num(a.sent.chars) })) : null,
+    !a.busy ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: askClaude }, t('Ask again'))) : null)
 }
 
 /* ---------- the first screen ---------- */
@@ -247,6 +304,7 @@ function viewResults() {
     S.busy ? h('div', { class: 'empty dots' }, t('Searching')) : null,
     r ? h('div', { class: 'sum' }, ...planChips(r.plan), h('span', { class: 'chip' }, t('{n} found', { n: num(r.results.length) }))) : null,
     S.answer ? h('section', { class: 'panel answer' }, h('b', { class: 'lbl' }, t('Answer')), S.answer === '…' ? h('p', { class: 'dots' }, t('Thinking')) : h('p', {}, S.answer)) : null,
+    !S.busy ? claudeEl() : null,
     r && !r.results.length && !S.busy ? (indexedCount() ? h('div', { class: 'empty' }, t('Nothing found. Try other words, or a wider period.')) : firstReadEl() || h('div', { class: 'empty' }, t('Nothing is read yet, so nothing can be found.'))) : null,
     ...(r ? r.results.map((x) => hitEl(x, r.plan?.terms || S.q)) : [])))
 }
@@ -283,6 +341,8 @@ function viewSettings() {
         h('label', { class: 'nf' }, h('small', {}, t('Model that finds by meaning')), h('input', { value: s.ollama?.embed || '', onchange: (e) => save({ ollama: { ...s.ollama, embed: e.target.value.trim() } }) })),
         h('label', { class: 'nf' }, h('small', {}, t('Model that answers')), h('input', { value: s.ollama?.chat || '', onchange: (e) => save({ ollama: { ...s.ollama, chat: e.target.value.trim() } }) }))),
       setupEl()),
+    h('h2', {}, 'Claude'),
+    claudeSettings(),
     h('h2', {}, t('The index')),
     h('section', { class: 'panel setup' },
       h('div', { class: 'counts' },
@@ -294,6 +354,27 @@ function viewSettings() {
       h('div', { class: 'row' },
         S.progress ? h('button', { class: 'btn', onclick: () => M.stop() }, t('Stop')) : h('button', { class: 'btn main', onclick: () => { M.index(); toast(t('Reading… {n}', { n: '' })) } }, t('Read now')),
         h('button', { class: 'btn', onclick: async () => { if (await M.erase()) { toast(t('Erased. RoarMind reads everything again.')); refresh() } } }, t('Erase everything'))))))
+}
+
+// Settings > Claude: the RoarMe account Ask Claude uses, and what goes to Claude
+function claudeSettings() {
+  const c = S.claude
+  const why = h('small', { class: 'muted' }, t('Searching always stays on this Mac. Only when you press Ask Claude, your question and pieces of the items found go to Claude (Anthropic), through The Mad Lions\' server; never whole files, nothing else.'))
+  if (!M.claude) return h('section', { class: 'panel setup' }, why, h('small', { class: 'muted' }, t('Ask Claude works in the Mac app.')))
+  if (c.signedIn) return h('section', { class: 'panel setup' }, h('p', {}, t('Signed in as {e}.', { e: c.email || '…' })), why,
+    h('div', { class: 'row' }, h('button', { class: 'btn', onclick: async () => { S.claude = await M.claude.signOut(); S.claudeAns = null; draw() } }, t('Sign out'))))
+  const email = h('input', { type: 'email', placeholder: 'Email', autocomplete: 'username', value: '' })
+  const pass = h('input', { type: 'password', placeholder: t('Password'), autocomplete: 'current-password' })
+  const go = async () => {
+    const r = await M.claude.signIn(email.value, pass.value)
+    if (r.ok) { S.claude = { signedIn: true, email: r.email }; toast(t('Signed in. Ask Claude is ready.')); if (S.res) S.view = 'results'; draw() }
+    else toast(t('Could not sign in: {e}', { e: r.error }))
+  }
+  pass.addEventListener('keydown', (e) => { if (e.key === 'Enter') go() })
+  if (S.claudeFocus) { S.claudeFocus = false; requestAnimationFrame(() => email.focus()) }
+  return h('section', { class: 'panel setup' }, h('p', {}, t('Sign in with your RoarMe account (the same as RoarWriter and RoarList) to ask Claude.')),
+    h('div', { class: 'two' }, h('label', { class: 'nf' }, h('small', {}, 'Email'), email), h('label', { class: 'nf' }, h('small', {}, t('Password')), pass)),
+    h('div', { class: 'row' }, h('button', { class: 'btn main', onclick: go }, t('Sign in'))), why)
 }
 
 refresh()

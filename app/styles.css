@@ -153,3 +153,12 @@ main { flex: 1; min-height: 0; overflow: auto; }
 .toast { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); z-index: 60; padding: 10px 16px; border-radius: 999px; background: rgba(34,37,44,.96); border: 1px solid var(--edge); box-shadow: 0 16px 40px rgba(0,0,0,.45); }
 .veil { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0,0,0,.5); }
 @media (max-width: 760px) { .hit { grid-template-columns: 36px minmax(0, 1fr); } .hit .acts { grid-column: 2; } .two { grid-template-columns: 1fr; } }
+
+/* ---------- Ask Claude (Alex, 30 Oct) ---------- */
+.claude-ask { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.claude-ask small { flex: 1; min-width: 220px; }
+.claude .lbl { display: inline-flex; align-items: center; gap: 6px; color: var(--acc); }
+.claude .lbl svg, .claude-ask svg { width: 16px; height: 16px; }
+.claude-text p { margin: 0 0 6px; line-height: 1.55; }
+.cite { padding: 0 3px; border: 0; background: none; color: var(--acc); font: inherit; font-weight: 600; cursor: pointer; }
+.cite:hover { text-decoration: underline; }

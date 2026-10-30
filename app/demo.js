@@ -17,5 +17,11 @@ export function demoMind() {
     answer: async () => { await wait(800); return 'Είναι το email του Γιώργου Παπαδόπουλου «Προσφορές εξοπλισμού» στις 12 Μαρτίου 2024, με συνημμένο το prosfores_martios.pdf [1]. Το ίδιο PDF είναι και στα Downloads [2].' },
     pick: async () => ['/Users/alex/Projects'], open: async () => true, reveal: async () => true,
     openSettings: async () => true, getOllama: async () => true,
+    // Ask Claude, signed in, with a sample answer
+    claude: {
+      state: async () => ({ signedIn: true, email: 'alex@themadlions.com' }),
+      signIn: async (email) => ({ ok: true, signedIn: true, email }), signOut: async () => ({ signedIn: false, email: '' }),
+      ask: async () => { await wait(900); return { ok: true, sent: { items: 3, chars: 4210 }, answer: 'Η προσφορά του Γιώργου είναι στο email της 12ης Μαρτίου 2024 [1], με το PDF συνημμένο [2]: ARRI Alexa Mini LF με σετ Cooke για 3 μέρες, €2.960 συνολικά.\nΤο screenshot της 14ης Μαρτίου [3] δείχνει το ίδιο σύνολο, άρα δεν άλλαξε μετά.\n- Λείπει: η ασφάλεια του εξοπλισμού δεν αναφέρεται πουθενά. Αξίζει να τον ρωτήσεις πριν κλείσεις.' } },
+    },
   }
 }
