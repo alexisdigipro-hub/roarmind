@@ -8,7 +8,7 @@ const { execFile } = require('child_process')
 const { open, getMeta, setMeta } = require('./engine/db')
 const { Helper } = require('./engine/extract')
 const indexer = require('./engine/indexer')
-const { search, answer } = require('./engine/search')
+const { search, answer, excerpts } = require('./engine/search')
 const ollama = require('./engine/ollama')
 
 try { os.setPriority(0, 10) } catch { /* as it is */ }
@@ -71,6 +71,8 @@ const CMD = {
   stop() { stopNow = true; return true },
   async search({ q, ai }) { return search(db, indexer.settingsOf(db).ollama, String(q || ''), { ai: ai !== false }) },
   async answer({ q, results }) { return answer(indexer.settingsOf(db).ollama, String(q || ''), results || []) },
+  // Ask Claude: the pieces of the items found, within their limits (search.js excerpts)
+  excerpts({ ids, q }) { return excerpts(db, (ids || []).slice(0, 12), String(q || '')) },
   // the two models, downloaded through Ollama, with their progress
   async pull() {
     if (pulling) return true

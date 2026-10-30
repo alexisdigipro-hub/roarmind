@@ -12,6 +12,12 @@ contextBridge.exposeInMainWorld('mind', {
   erase: () => ipcRenderer.invoke('mind:erase'),
   search: (q) => ipcRenderer.invoke('mind:search', q),
   answer: (a) => ipcRenderer.invoke('mind:answer', a),
+  claude: {
+    state: () => ipcRenderer.invoke('mind:claude-state'),
+    signIn: (email, password) => ipcRenderer.invoke('mind:claude-signin', { email, password }),
+    signOut: () => ipcRenderer.invoke('mind:claude-signout'),
+    ask: (q, ids) => ipcRenderer.invoke('mind:claude-ask', { q, ids }),
+  },
   pick: () => ipcRenderer.invoke('mind:pick'),
   open: (id) => ipcRenderer.invoke('mind:open', String(id)),
   reveal: (id) => ipcRenderer.invoke('mind:reveal', String(id)),

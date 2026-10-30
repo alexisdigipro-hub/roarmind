@@ -8,7 +8,7 @@ const path = require('path')
 const http = require('http')
 const { open, setMeta } = require('../electron/engine/db')
 const { runIndex, settingsOf } = require('../electron/engine/indexer')
-const { search, simplePlan, ftsQuery } = require('../electron/engine/search')
+const { search, simplePlan, ftsQuery, excerpts } = require('../electron/engine/search')
 const { parseEmlx } = require('../electron/engine/mail')
 const { nameForms, chunks, norm } = require('../electron/engine/text')
 
@@ -111,6 +111,12 @@ const at = (...p) => { const f = path.join(root, ...p); fs.mkdirSync(path.dirnam
     assert.strictEqual(r2.counts.read, 1); assert.strictEqual(r2.removed, 1)
     assert.strictEqual((await search(db, cfg, 'drone', { ai: false })).results[0].title, 'notes.txt')
     assert.strictEqual(simplePlan('screenshot με το τιμολόγιο').kinds[0], 'image')
+    // Ask Claude sends only pieces of what was found, within its limits
+    const found = (await search(db, cfg, 'drone', { ai: false })).results.map((r) => r.id)
+    const ex = excerpts(db, found, 'drone', { per: 40, total: 60 })
+    assert.ok(ex.length >= 1 && ex[0].title === 'notes.txt' && ex[0].text.includes('drone'), JSON.stringify(ex))
+    assert.ok(ex.every((e) => e.text.length <= 40) && ex.reduce((a, e) => a + e.text.length, 0) <= 60)
+    assert.deepStrictEqual(excerpts(db, [], 'drone'), [])
     os.homedir = prevHome
     console.log('engine: all good')
   } catch (e) { console.error(e); process.exitCode = 1 } finally { ollama.close(); fs.rmSync(root, { recursive: true, force: true }) }

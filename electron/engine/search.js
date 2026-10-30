@@ -134,4 +134,33 @@ async function answer(cfg, question, results) {
   return ollama.chat(cfg, [{ role: 'system', content: sys }, { role: 'user', content: `Question: ${question}\n\nFound:\n${ctx}` }], { ms: 120e3 })
 }
 
-module.exports = { search, plan, simplePlan, answer, snippet, ftsQuery, KINDS }
+/* What Ask Claude may send (Alex, 30 Oct: RoarMind "as you", option 2): for the items found, only their pieces of
+   text, the ones that match the question's words first, then the item's opening; at most `per` characters an item and
+   `total` in all. Never a whole file, never anything that was not found for this question. */
+function excerpts(db, ids, question, { per = 3500, total = 24000 } = {}) {
+  const words = [...new Set(norm(question).split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2))]
+  const out = []
+  let left = total
+  for (const id of ids) {
+    if (left <= 0) break
+    const it = db.prepare('SELECT id, kind, ext, title, sender, date, path FROM items WHERE id = ?').get(Number(id))
+    if (!it) continue
+    const pieces = db.prepare('SELECT n, text FROM chunks WHERE item = ? ORDER BY n').all(it.id)
+    const hits = (p) => words.reduce((a, w) => a + (norm(p.text).includes(w) ? 1 : 0), 0)
+    const order = pieces.map((p) => ({ ...p, h: hits(p) })).sort((a, b) => b.h - a.h || a.n - b.n)
+    const take = []
+    let room = Math.min(per, left)
+    for (const p of order) {
+      if (room <= 0) break
+      const s = p.text.slice(0, room)
+      take.push({ n: p.n, s })
+      room -= s.length
+    }
+    const text = take.sort((a, b) => a.n - b.n).map((p) => p.s).join('\n…\n')
+    left -= text.length
+    out.push({ id: it.id, kind: it.kind, ext: it.ext, title: it.title, sender: it.sender || '', date: it.date ? iso(new Date(it.date)) : '', text })
+  }
+  return out
+}
+
+module.exports = { search, plan, simplePlan, answer, excerpts, snippet, ftsQuery, KINDS }

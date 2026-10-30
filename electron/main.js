@@ -7,6 +7,7 @@ const path = require('path')
 const { execFile } = require('child_process')
 const { pathToFileURL } = require('url')
 const updater = require('./updater')
+const claude = require('./claude')
 
 nativeTheme.themeSource = 'dark'
 
@@ -88,6 +89,18 @@ ipcMain.handle('mind:search', async (_e, q) => {
   return r
 })
 ipcMain.handle('mind:answer', (_e, a) => ask('answer', a))
+// Ask Claude: only when the person presses it; only the question and pieces of the items found (claude.js)
+ipcMain.handle('mind:claude-state', () => claude.state())
+ipcMain.handle('mind:claude-signin', async (_e, a) => { try { return { ok: true, ...(await claude.signIn(a?.email, a?.password)) } } catch (e) { return { ok: false, error: String(e?.message || e) } } })
+ipcMain.handle('mind:claude-signout', () => claude.signOut())
+ipcMain.handle('mind:claude-ask', async (_e, a) => {
+  try {
+    const items = await ask('excerpts', { ids: a?.ids || [], q: a?.q || '' })
+    const answer = await claude.ask(String(a?.q || ''), items)
+    // the ids in the order sent, so [2] in the answer opens the item that was second in what Claude read
+    return { ok: true, answer, ids: items.map((i) => i.id), sent: { items: items.length, chars: items.reduce((n, i) => n + i.text.length, 0) } }
+  } catch (e) { return { ok: false, signin: !!e?.signin, error: String(e?.message || e) } }
+})
 ipcMain.handle('mind:pick', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(win, { title: 'Folders RoarMind reads', properties: ['openDirectory', 'multiSelections'] })
   return canceled ? [] : filePaths

@@ -20,8 +20,16 @@ stays on the Mac. An experiment of The Mad Lions Lab.
 
 ## Private by design
 The index is one file in the app's own folder on the Mac. The AI runs through [Ollama](https://ollama.com) on the
-same Mac (when Ollama is installed but closed, RoarMind opens it in the background); RoarMind talks to nothing else (apart from looking for its own updates on GitHub). *Erase everything* in
+same Mac (when Ollama is installed but closed, RoarMind opens it in the background); RoarMind talks to nothing else (apart from looking for its own updates on GitHub, and Ask Claude, only when you press it: see below). *Erase everything* in
 Settings deletes the index; files, mail and notes are never changed.
+
+## Ask Claude (0.2.0)
+Alex, 30 Oct: "can RoarMind work like you?". Under the answer of a search, **Ask Claude** sends the question and pieces
+of the items found (never whole files, at most 8 items and 24,000 characters) to Claude, which thinks them through:
+compares, adds up, notices what is missing, drafts a reply. Its answer names the items as [2]; a tap opens them. It
+needs a RoarMe account (Settings > Claude, the same as RoarWriter and RoarList); the session is kept encrypted on the
+Mac. The Edge Function `roarmind-ai` (supabase/functions/roarmind-ai) runs in RoarMe's Supabase project and holds the
+Anthropic key. Without pressing it, nothing leaves the Mac.
 
 ## Needs
 A Mac with Apple Silicon (M1 or later; 16 GB is comfortable), macOS 12 or later, Ollama (free) and its two models
