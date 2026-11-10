@@ -45,3 +45,5 @@ A Mac with Apple Silicon (M1 or later; 16 GB is comfortable), macOS 12 or later,
 ## Releases
 Bump `version` in package.json and run the *RoarMind for Mac* workflow (or push a tag `v0.1.0`): it builds the helper
 and the Apple Silicon and Intel apps onto a GitHub release; the app updates itself from there.
+
+0.2.1: new icon (the Lab's one family of icons, 10 Nov 2026).
